@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans 
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <bean id="webServiceTemplate" 
+    class="org.springframework.ws.client.core.WebServiceTemplate">
+    <property name="defaultUri" value="http://localhost:8080/echo-server/services" />
+    <property name="messageFactory">
+		<bean id="messageFactory"
+			class="org.springframework.ws.soap.saaj.SaajSoapMessageFactory">
+		</bean>
+    </property>
+    <property name="interceptors">
+      <list>
+        <ref bean="wsSecurityInterceptor"/>
+      </list>
+    </property>    
+  </bean>
+	    
+  <bean id="wsSecurityInterceptor"
+    class="org.springframework.ws.soap.security.wss4j2.Wss4jSecurityInterceptor">
+    <!-- request actions -->
+    <property name="securementActions" value="Signature Encrypt Timestamp" />
+    <!-- request digital signature -->
+    <property name="securementUsername" value="test-client-email" />
+    <property name="securementPassword" value="storepass" />
+    <property name="securementSignatureCrypto" ref="cryptoFactoryBean"/>
+    <property name="securementSignatureKeyIdentifier" value="DirectReference" />
+    <!-- request encryption -->        
+    <property name="securementEncryptionParts" 
+      value="{Content}{http://schemas.xmlsoap.org/soap/envelope/}Body" />
+    <property name="securementEncryptionUser" value="test-server" />
+    <property name="securementEncryptionCrypto" ref="cryptoFactoryBean"/>
+    <!-- request secure timestamp -->
+    <property name="timestampPrecisionInMilliseconds" value="true" />
+    <property name="timestampStrict" value="false" />
+    <property name="securementTimeToLive" value="900" /> <!-- 15 min - seconds request is valid -->
+    <property name="validationTimeToLive" value="900" /> <!-- 15 min - seconds request is valid -->
+        
+    <!-- response actions -->
+    <property name="validationActions" value="Timestamp Signature Encrypt" />
+    <!-- response signature validation -->
+    <property name="validationSignatureCrypto" ref="cryptoFactoryBean"/>
+    <!-- response decryption -->
+    <property name="validationDecryptionCrypto" ref="cryptoFactoryBean"/>
+    <property name="validationCallbackHandler">
+      <bean class="org.springframework.ws.soap.security.wss4j2.callback.KeyStoreCallbackHandler">
+        <property name="privateKeyPassword" value="storepass" />
+      </bean>
+    </property>
+  </bean>
+  
+  <!-- Crypto factory bean for accessing ws-security certificate keystore (.jks) file -->
+  <bean id="cryptoFactoryBean" class="org.springframework.ws.soap.security.wss4j2.support.CryptoFactoryBean">
+    <property name="keyStorePassword" value="storepass" />
+    <property name="keyStoreLocation" value="test-client.jks" />
+  </bean>
+  
+</beans>
